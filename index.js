@@ -67,7 +67,10 @@ app.use("/api/messages", messageRoute);
 app.use("/api/chats", chatRoute);
 app.use("/api/messsagesV2", messageV2Route);
 
-const server = app.listen(1800, () => {
+var port = process.env.PORT || 5000;
+
+const server = app.listen(port, () => {
+  console.log(port);
   console.log("Server is running... ");
 });
 
