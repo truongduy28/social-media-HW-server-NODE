@@ -79,7 +79,7 @@ const io = new Server(server, {
     origin: [
       process.env.CLIENT_HOST,
       "http://localhost:3000",
-      "https://hello-world-network.vercel.app/",
+      "https://hello-world-network.vercel.app",
     ],
 
     methods: ["GET", "POST", "PUT", "PATCH"],
