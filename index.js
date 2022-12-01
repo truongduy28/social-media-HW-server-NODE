@@ -79,10 +79,9 @@ const io = new Server(server, {
     origin: [
       process.env.CLIENT_HOST,
       "http://localhost:3000",
-      "https://frost-social.vercel.app",
-      "https://frost-social-4f5kdlt7u-noothelee.vercel.app",
-      "https://frost-social-git-main-noothelee.vercel.app/",
+      "https://hello-world-network.vercel.app/",
     ],
+
     methods: ["GET", "POST", "PUT", "PATCH"],
     allowedHeaders: ["Content-type"],
   },
