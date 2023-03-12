@@ -1,0 +1,37 @@
+{
+    "name": "social-media-mern-app",
+    "version": "1.0.0",
+    "description": "o",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "nodemon index.js"
+    },
+    "author": "duy",
+    "license": "ISC",
+    "dependencies": {
+        "bcrypt": "^5.0.1",
+        "cloudinary": "^1.32.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.0",
+        "express": "^4.17.3",
+        "express-async-handler": "^1.2.0",
+        "helmet": "^5.0.2",
+        "jsonwebtoken": "^8.5.1",
+        "jwt": "^0.2.0",
+        "mogoose": "^0.0.1-security",
+        "mongoose": "^6.6.5",
+        "morgan": "^1.10.0",
+        "multer": "^1.4.5-lts.1",
+        "nanoid": "^4.0.0",
+        "node-fetch": "^2.6.7",
+        "node-gyp": "^9.3.0",
+        "nodemon": "^2.0.15",
+        "path": "^0.12.7",
+        "socket.io": "^4.5.3",
+        "uuid": "^9.0.0",
+        "uuidv4": "^6.2.13",
+        "validator": "^13.7.0",
+        "yarn": "^1.22.17"
+    }
+}
