@@ -246,7 +246,7 @@ router.put("/follow", async (req, res) => {
     }
 
     const data = {
-      type: "like",
+      type: "follow",
       affectedBy: follower,
       content: "just followed you!",
     };
