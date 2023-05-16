@@ -6,8 +6,6 @@ const jwt = require("jsonwebtoken");
 const newFormat = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
 const validator = require("validator");
 const randomCatAvatar = require("./../middleware/randomCatAvatar");
-const verifyToken = require("../middleware/auth");
-const { uuid } = require("uuidv4");
 
 const router = require("express").Router();
 
@@ -527,63 +525,6 @@ router.get("/suggest-newest-user/:id", async (req, res) => {
     return res.status(500).json({ msg: "Something went wrong. Try again!" });
   }
 });
-
-// suggest users v2
-// router.get("/suggest-user/:id", async (req, res) => {
-//   try {
-//     // get all following user of me
-//     const user = await User.findById(req.params.id);
-//     let data = [];
-
-//     // array user following
-//     if (!user) {
-//       return res.status(400).json({ msg: "No user found!" });
-//     }
-//     let following = user.following;
-//     const unique = [];
-//     let end = [];
-//     if (following.length > 0 && following) {
-//       for (let i = 0; i < following.length; i++) {
-//         if (unique.length > 10) return;
-//         const people = await User.find({ follower: { $in: following[i] } })
-//           .select(
-//             "-password -secret -following -follower -createdAt -updatedAt -notify -role -__v  -username  -about"
-//           )
-//           .limit(20);
-//         data.push(...people);
-//         data.map((x) =>
-//           unique.filter((a) => a.email == x.email).length > 0
-//             ? null
-//             : unique.push(x)
-//         );
-//       }
-//     }
-
-//     if (unique.length < 10) {
-//       arrId = [];
-//       unique.map((x) => arrId.push(x._id));
-
-//       const userExtend = await User.aggregate([
-//         {
-//           $match: {
-//             _id: {
-//               $nin: arrId,
-//             },
-//           },
-//         },
-//         { $sample: { size: 10 - unique.length } },
-//         { $project: { name: 1, email: 1, image: 1 } },
-//       ]);
-
-//       unique.push(...userExtend);
-//     }
-
-//     return res.status(200).json({ msg: "Find success", people: unique });
-//   } catch (error) {
-//     // return res.status(400).json({ msg: "Something went wrong. Try again!" });
-//     console.log(error);
-//   }
-// });
 
 // get list user following v2
 router.get("/user-following/:id", async (req, res) => {

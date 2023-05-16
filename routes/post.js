@@ -2,14 +2,6 @@ const router = require("express").Router();
 const Post = require("../models/Post");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const verifyToken = require("../middleware/auth");
-const cloudinary = require("cloudinary").v2;
-
-cloudinary.config({
-  cloud_name: "dfvymufao",
-  api_key: "525622493837247",
-  api_secret: "mVOEQ0zziHADCEnqGExtCqREDuc",
-});
 
 router.get("/post-sumary-stats", async (req, res) => {
   try {
@@ -555,22 +547,6 @@ router.post("/share-post", async (req, res) => {
     return res.status(400).json({ msg: error });
   }
 });
-//create a post
-router.post("/", verifyToken, async (req, res) => {
-  const newPost = new Post({
-    userId: req.userId,
-    desc: req.body.desc,
-    img: req.body.img,
-    category: req.body.category,
-  });
-  // newPost.populate('userId')
-  try {
-    const savedPost = await newPost.save();
-    res.status(200).json(savedPost);
-  } catch (err) {
-    res.status(500).json(err.message);
-  }
-});
 
 // edit post v2
 router.patch("/:id", async (req, res) => {
@@ -654,21 +630,6 @@ router.put("/delete/:id", async (req, res) => {
   }
 });
 
-//update a post
-router.put("/:id", verifyToken, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (post.userId == req.userId) {
-      await post.updateOne({ $set: req.body });
-      return res.status(200).json(post);
-    } else {
-      return res.status(403).json("you can update only your post");
-    }
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
-
 // delete-comment v2
 router.patch("/edit-comment/:id", async (req, res) => {
   try {
@@ -711,9 +672,9 @@ router.get("/:id", async (req, res) => {
   try {
     const postId = req.params.id;
     const post = await Post.findById(postId)
-      .populate("postedBy", "-password -secret")
-      .populate("comments.postedBy", "-password -secret")
-      .populate("isShare")
+      .populate("postedBy", "name image email")
+      .populate("comments.postedBy", "name image email")
+      .populate("isShare", "image content postedBy isDelete createdAt")
       .populate("isShare.postedBy", "-password -secret");
     if (!post) {
       return res.status(400).json({ msg: "No post found!" });
@@ -721,67 +682,6 @@ router.get("/:id", async (req, res) => {
     return res.status(200).json({ post });
   } catch (error) {
     return res.status(400).json({ msg: error });
-  }
-});
-
-//delete a post
-router.delete("/:id", verifyToken, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (post.userId == req.userId) {
-      await post.deleteOne();
-      return res.status(200).json("the post has been deleted");
-    } else {
-      return res.status(403).json("you can delete only your post");
-    }
-  } catch (err) {
-    return res.status(500).json(err.message);
-  }
-});
-
-//like / dislike a post
-router.put("/:id/like", verifyToken, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post.likes.includes(req.userId)) {
-      await post.updateOne({ $push: { likes: req.userId } });
-      return res.status(200).json(post);
-    } else {
-      await post.updateOne({ $pull: { likes: req.userId } });
-      return res.status(200).json("The post has been disliked");
-    }
-  } catch (err) {
-    return res.status(500).json(err);
-  }
-});
-
-//get a post
-// router.get("/:id", async (req, res) => {
-//   try {
-//     const post = await Post.findById(req.params.id).populate("userId", [
-//       "username",
-//       "profilePicture",
-//       "isAdmin",
-//     ]);
-//     return res.status(200).json(post);
-//   } catch (err) {
-//     return res.status(500).json(err.message);
-//   }
-// });
-
-//get timeline posts
-router.get("/timeline/all", async (req, res) => {
-  try {
-    const currentUser = await User.findById(req.body.userId);
-    const userPosts = await Post.find({ userId: currentUser._id });
-    const friendPosts = await Promise.all(
-      currentUser.followings.map((friendId) => {
-        return Post.find({ userId: friendId });
-      })
-    );
-    res.json(userPosts.concat(...friendPosts));
-  } catch (err) {
-    res.status(500).json(err.message);
   }
 });
 
