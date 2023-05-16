@@ -1,4 +1,3 @@
-// @ts-nocheck
 const mongoose = require("mongoose");
 const validator = require("validator");
 
@@ -77,6 +76,7 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    archivedPosts: [{ type: mongoose.Types.ObjectId, ref: "Post" }],
   },
   {
     timestamps: true,

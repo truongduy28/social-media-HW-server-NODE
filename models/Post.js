@@ -35,6 +35,11 @@ const postSchema = new mongoose.Schema(
         },
       },
     ],
+    isShare: {
+      type: mongoose.Types.ObjectId,
+      ref: "Post",
+      required: false,
+    },
   },
   { timestamps: true }
 );
