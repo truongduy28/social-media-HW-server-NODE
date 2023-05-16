@@ -29,37 +29,15 @@ dotenv.config();
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // connect database
-mongoose.connect(
-  "mongodb+srv://truongduy:0@cluster0.qvvuizn.mongodb.net/?retryWrites=true&w=majority",
-  () => {
-    console.log("Connected to MongoDB");
-  }
-);
+mongoose.connect(process.env.MONGO_URL, () => {
+  console.log("Connected to MongoDB");
+});
 
 //middleware
 app.use(express.json());
 app.use(helmet());
 app.use(cors());
 app.use(morgan("common"));
-
-// const storage = multer.diskStorage({
-//     destination: (req, file, cb) => {
-//         cb(null, "public/images");
-//     },
-//     filename: (req, file, cb) => {
-//         cb(null, req.body.name);
-//         // cb(null, file.originalname);
-//     },
-// });
-
-// const upload = multer({ storage: storage });
-// app.post("/api/upload", upload.single("file"), (req, res) => {
-//     try {
-//         return res.status(200).json("File uploded successfully");
-//     } catch (error) {
-//         return res.status(500).json(error.message);
-//     }
-// });
 
 // request http
 app.get("/", (req, res) => {
@@ -79,13 +57,7 @@ const server = app.listen(1800, () => {
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.CLIENT_HOST,
-      "http://localhost:3000",
-      "https://frost-social.vercel.app",
-      "https://frost-social-4f5kdlt7u-noothelee.vercel.app",
-      "https://frost-social-git-main-noothelee.vercel.app/",
-    ],
+    origin: [process.env.HOST_FE_CLIENT_URL, process.env.LOCAL_FE_CLIENT_URL],
     methods: ["GET", "POST", "PUT", "PATCH"],
     allowedHeaders: ["Content-type"],
   },
