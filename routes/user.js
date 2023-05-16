@@ -1,13 +1,101 @@
 const User = require("../models/User.js");
+const Post = require("../models/Post.js");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const newFormat = /[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
 const validator = require("validator");
 const randomCatAvatar = require("./../middleware/randomCatAvatar");
-const verifyToken = require("../middleware/auth");
-const { uuid } = require("uuidv4");
 
 const router = require("express").Router();
+
+router.get("/users-chart", async (req, res) => {
+  try {
+    // Get the start and end dates from the query parameters, or use default values
+    const { start = threeMonthsAgo(), end = new Date() } = req.query;
+
+    // Convert the start and end dates to Date objects
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Find all users created within the specified time range and group them by their createdAt date
+    const users = await User.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            day: { $dayOfMonth: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Transform the data into the format needed for the chart
+    const data = users.map((user) => ({
+      date: `${user._id.day}/${user._id.month}/${user._id.year}`,
+      quantity: user.count,
+    }));
+
+    // Return the data as a JSON response
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+function threeMonthsAgo() {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 3);
+  return date;
+}
+
+router.get("/search/:keyword", async (req, res) => {
+  const { keyword } = req.params;
+
+  try {
+    const users = await User.find(
+      {
+        $or: [
+          { name: { $regex: keyword, $options: "i" } },
+          { email: { $regex: keyword, $options: "i" } },
+        ],
+      },
+      "name email image createdAt"
+      // "name createdAt"
+    );
+
+    const posts = await Post.find(
+      {
+        content: { $regex: keyword, $options: "i" },
+        isDelete: false,
+      },
+      "content postedBy image createdAt"
+      // "  createdAt"
+    ).populate("postedBy", "name email image");
+
+    const results = [
+      ...users.map((user) => ({ type: "user", user })),
+      ...posts.map((post) => ({ type: "post", post })),
+    ];
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
 // register user v2
 router.post("/register", async (req, res) => {
   const { name, email, password, rePassword, secret } = req.body;
@@ -175,14 +263,23 @@ router.put("/update-user", async (req, res) => {
       data.city = city;
     }
 
+    if (!currentPassword) {
+      return res
+        .status(400)
+        .json({ msg: "Password is required to authen user" });
+    }
     if (currentPassword) {
-      if (newPassword !== confirmNewPassword) {
-        return res.status(400).json({ msg: "New passwords are not the same!" });
-      }
-      if (newPassword.length < 6) {
-        return res
-          .status(400)
-          .json({ msg: "Password must be longer than 6 characters!" });
+      if (newPassword || confirmNewPassword) {
+        if (newPassword !== confirmNewPassword) {
+          return res
+            .status(400)
+            .json({ msg: "New passwords are not the same!" });
+        }
+        if (newPassword.length < 8) {
+          return res
+            .status(400)
+            .json({ msg: "Password must be longer than 8 characters!" });
+        }
       }
 
       const user = await User.findById(id);
@@ -402,62 +499,32 @@ router.get("/suggest-user/:id", async (req, res) => {
   }
 });
 
-// suggest users v2
-// router.get("/suggest-user/:id", async (req, res) => {
-//   try {
-//     // get all following user of me
-//     const user = await User.findById(req.params.id);
-//     let data = [];
+// 10 user newest
+router.get("/suggest-newest-user/:id", async (req, res) => {
+  try {
+    // current user
+    const user = await User.findById(req.params.id);
 
-//     // array user following
-//     if (!user) {
-//       return res.status(400).json({ msg: "No user found!" });
-//     }
-//     let following = user.following;
-//     const unique = [];
-//     let end = [];
-//     if (following.length > 0 && following) {
-//       for (let i = 0; i < following.length; i++) {
-//         if (unique.length > 10) return;
-//         const people = await User.find({ follower: { $in: following[i] } })
-//           .select(
-//             "-password -secret -following -follower -createdAt -updatedAt -notify -role -__v  -username  -about"
-//           )
-//           .limit(20);
-//         data.push(...people);
-//         data.map((x) =>
-//           unique.filter((a) => a.email == x.email).length > 0
-//             ? null
-//             : unique.push(x)
-//         );
-//       }
-//     }
+    if (!user) {
+      return res.status(400).json({ msg: "No user found!" });
+    }
 
-//     if (unique.length < 10) {
-//       arrId = [];
-//       unique.map((x) => arrId.push(x._id));
+    let following = user.following; // array of user IDs that the current user is following
 
-//       const userExtend = await User.aggregate([
-//         {
-//           $match: {
-//             _id: {
-//               $nin: arrId,
-//             },
-//           },
-//         },
-//         { $sample: { size: 10 - unique.length } },
-//         { $project: { name: 1, email: 1, image: 1 } },
-//       ]);
+    // Find users who are not in the "following" array and sort them by creation date in descending order
+    const temp = await User.find({ _id: { $nin: following } })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("name email image"); // specify the fields to be included in the result
 
-//       unique.push(...userExtend);
-//     }
+    const people = temp.filter((u) => u._id != req.params.id); // exclude the current user
 
-//     return res.status(200).json({ msg: "Find success", people: unique });
-//   } catch (error) {
-//     // return res.status(400).json({ msg: "Something went wrong. Try again!" });
-//     console.log(error);
-//   }
-// });
+    return res.status(200).json({ msg: "Find success", people });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ msg: "Something went wrong. Try again!" });
+  }
+});
 
 // get list user following v2
 router.get("/user-following/:id", async (req, res) => {
