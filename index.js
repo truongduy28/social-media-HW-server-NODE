@@ -8,17 +8,18 @@ const cors = require("cors");
 const path = require("path");
 const { Server } = require("socket.io");
 
-// heheh
-
 // import route
 const userRoute = require("./routes/user");
 const postRoute = require("./routes/post");
 const messageRoute = require("./routes/message");
 const chatRoute = require("./routes/chat");
 const messageV2Route = require("./routes/messageV2");
+const reportRoute = require("./routes/report");
+const liveStreamRoute = require("./routes/liveStream");
 
 // app start up and port
 const app = express();
+app.disable("etag");
 
 app.use(express.json());
 
@@ -28,9 +29,12 @@ dotenv.config();
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 // connect database
-mongoose.connect(process.env.MONGO_URL, () => {
-  console.log("Connected to MongoDB");
-});
+mongoose.connect(
+  "mongodb+srv://truongduy:0@cluster0.qvvuizn.mongodb.net/?retryWrites=true&w=majority",
+  () => {
+    console.log("Connected to MongoDB");
+  }
+);
 
 //middleware
 app.use(express.json());
@@ -66,6 +70,8 @@ app.use("/api/posts", postRoute);
 app.use("/api/messages", messageRoute);
 app.use("/api/chats", chatRoute);
 app.use("/api/messsagesV2", messageV2Route);
+app.use("/api/report", reportRoute);
+app.use("/api/live-stream", liveStreamRoute);
 
 const server = app.listen(1800, () => {
   console.log("Server is running... ");
